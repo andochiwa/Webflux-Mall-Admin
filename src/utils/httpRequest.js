@@ -6,7 +6,7 @@ import merge from 'lodash/merge'
 import { clearLoginInfo } from '@/utils'
 
 const http = axios.create({
-  baseURL: '',
+  baseURL: 'http://localhost:1000',
   timeout: 1000 * 30,
   withCredentials: true,
   headers: {
