@@ -6,5 +6,11 @@ export default {
       url: `product/category`,
       method: `get`
     })
+  },
+  deleteById(id) {
+    return httpRequest({
+      url: `product/category/${id}`,
+      method: `delete`
+    })
   }
 }
