@@ -27,6 +27,13 @@
           >
             Delete
           </el-button>
+          <el-button
+            size="mini"
+            type="text"
+            @click="() => update(node, data)"
+          >
+            Update
+          </el-button>
         </span>
       </span>
     </el-tree>
@@ -34,17 +41,24 @@
     <el-dialog
       :close-on-click-modal="false"
       :visible.sync="dialogVisible"
-      title="提示"
+      :title="dialogTitle"
       width="30%"
+      :showClose="false"
     >
       <el-form :model="category">
-        <el-form-item label="分类名称" label-width="120px">
+        <el-form-item label="name" label-width="120px">
           <el-input v-model="category.name" autocomplete="off"></el-input>
+        </el-form-item>
+        <el-form-item label="icon" label-width="120px">
+          <el-input v-model="category.icon" autocomplete="off"></el-input>
+        </el-form-item>
+        <el-form-item label="product_unit" label-width="120px">
+          <el-input v-model="category.productUnit" autocomplete="off"></el-input>
         </el-form-item>
       </el-form>
       <span slot="footer" class="dialog-footer">
-        <el-button @click="dialogVisible = false">取 消</el-button>
-        <el-button type="primary" @click="addCategory">确 定</el-button>
+        <el-button @click="cancel">取 消</el-button>
+        <el-button type="primary" @click="submitData">确 定</el-button>
       </span>
     </el-dialog>
   </div>
@@ -59,15 +73,18 @@ export default {
   data() {
     return {
       category: {
+        id: null,
         name: "",
         parentCid: 0,
         catLevel: 0,
         showStatus: 1,
         sort: 0,
-        productUnit: 0,
+        icon: null,
+        productUnit: null,
         productCount: 0
       },
       dialogVisible: false,
+      dialogTitle: "save",
       expendedKey: [],
       menus: [],
       defaultProps: {
@@ -81,14 +98,25 @@ export default {
       const {data} = await category.getTreeData();
       this.menus = data.data.category;
     },
+
     append(data) {
       this.dialogVisible = true;
       this.category.parentCid = data.id
       this.category.catLevel = data.catLevel * 1 + 1
+      this.dialogTitle = "save category"
     },
-    addCategory() {
-      console.log(this.category);
+
+    async addCategory() {
+      let {data} = await category.save(this.category)
+      if (data.data.code === 200) {
+        this.$message.success("save data success")
+        await this.getTreeData()
+      } else {
+        this.$message.error("save data fail")
+      }
+      this.dialogVisible = false
     },
+
     async remove(node, data) {
       console.log(node, data);
       let confirm = await this.$confirm(
@@ -109,6 +137,38 @@ export default {
       this.$message.success("delete success");
       await this.getTreeData();
       this.expendedKey = [data.parentCid];
+    },
+
+    update(node, data) {
+      this.dialogVisible = true
+      // resolve two-way binding(deep copy)
+      this.category = JSON.parse(JSON.stringify(data))
+      this.dialogTitle = "update category"
+    },
+
+    async updateCategory() {
+      let {data} = await category.update(this.category)
+      if (data.data.code === 200) {
+        this.$message.success("update data success")
+        await this.getTreeData()
+      } else {
+        this.$message.error("update data fail")
+      }
+      this.dialogVisible = false
+      this.expendedKey = [this.category.parentCid];
+    },
+
+    submitData() {
+      if (this.category.id === null) {
+        this.addCategory()
+      } else {
+        this.updateCategory()
+      }
+    },
+
+    cancel() {
+      this.dialogVisible = false
+      this.category = {}
     }
   },
   created() {
