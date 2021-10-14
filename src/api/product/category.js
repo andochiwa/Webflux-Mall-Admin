@@ -26,5 +26,12 @@ export default {
       method: `put`,
       data: data
     })
+  },
+  deleteAll(ids) {
+    return httpRequest({
+      url: `product/category`,
+      method: `delete`,
+      data: ids
+    })
   }
 }

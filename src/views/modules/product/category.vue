@@ -1,5 +1,6 @@
 <template>
   <div>
+    <el-button type="danger" @click="deleteALl">删除所有选中的菜单</el-button>
     <el-tree
       :data="menus"
       :default-expanded-keys="expendedKey"
@@ -7,6 +8,7 @@
       :props="defaultProps"
       node-key="id"
       show-checkbox
+      ref="categoryTree"
     >
       <span slot-scope="{ node, data }" class="custom-tree-node">
         <span>{{ node.label }}</span>
@@ -115,6 +117,8 @@ export default {
         this.$message.error("save data fail")
       }
       this.dialogVisible = false
+      this.category = {}
+      this.expendedKey = [this.category.parentCid]
     },
 
     async remove(node, data) {
@@ -128,10 +132,10 @@ export default {
           type: "warning"
         }
       ).catch(() => {
-        this.$message.info("cancel delete");
+        this.$message.info("cancel delete")
       });
       if (!confirm) {
-        return;
+        return
       }
       await category.deleteById(data.id);
       this.$message.success("delete success");
@@ -155,7 +159,31 @@ export default {
         this.$message.error("update data fail")
       }
       this.dialogVisible = false
-      this.expendedKey = [this.category.parentCid];
+      this.expendedKey = [this.category.parentCid]
+    },
+
+    async deleteALl() {
+      let checkedIds = this.$refs.categoryTree
+        .getCheckedNodes(false, false)
+        .map(data => data.id)
+      let confirm = await this.$confirm(`delete [${checkedIds}] or not?`, `warning`, {
+        confirmButtonText: "confirm",
+        cancelButtonText: "cancel",
+        type: "warning"
+      }).catch(() => {
+        this.$message.info("cancel delete")
+      })
+      if (!confirm) {
+        return
+      }
+      let { data } = await category.deleteAll(checkedIds);
+      if (data.data.code === 200) {
+        this.$message.success("success delete")
+      } else {
+        this.$message.error("error delete")
+      }
+      await this.getTreeData()
+
     },
 
     submitData() {
