@@ -39,17 +39,17 @@ export default {
         return null;
       }
     },
-    fileList: {
-      get: function () {
-        return this.showFileList ? [{
-          name: this.imageName,
-          url: this.imageUrl
-        }] : []
-      },
-      set: function (newValue) {
-        return newValue
-      }
-    },
+    // fileList: {
+    //   get: function () {
+    //     return this.showFileList ? [{
+    //       name: this.imageName,
+    //       url: this.imageUrl
+    //     }] : []
+    //   },
+    //   set: function (newValue) {
+    //     return newValue
+    //   }
+    // },
     showFileList: {
       get: function () {
         return this.value !== null && this.value !== '' && this.value !== undefined;
@@ -69,10 +69,10 @@ export default {
         host: '',
         // callback:'',
       },
-      // fileList: [{
-      //   name: this.imageName,
-      //   url: this.imageUrl
-      // }],
+      fileList: this.imageName === null ? [] : [{
+        name: this.imageName,
+        url: this.imageUrl
+      }],
       dialogVisible: false
     };
   },

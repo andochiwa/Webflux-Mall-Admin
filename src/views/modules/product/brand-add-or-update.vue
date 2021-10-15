@@ -8,7 +8,7 @@
       <el-input v-model="dataForm.name" placeholder="品牌名"></el-input>
     </el-form-item>
     <el-form-item label="品牌logo地址" prop="logo">
-      <single-upload v-model="dataForm.logo"/>
+      <single-upload v-model="dataForm.logo" ref="singleUpdate"/>
     </el-form-item>
     <el-form-item label="介绍" prop="description">
       <el-input v-model="dataForm.description" placeholder="介绍"></el-input>
@@ -86,6 +86,10 @@ export default {
             this.dataForm.showStatus = data.data.brand.showStatus
             this.dataForm.firstLetter = data.data.brand.firstLetter
             this.dataForm.sort = data.data.brand.sort
+            this.$refs.singleUpdate.fileList = [{
+              name: data.data.brand.name,
+              url: data.data.brand.logo
+            }]
           }
         }
       })
