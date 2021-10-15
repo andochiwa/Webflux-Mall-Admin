@@ -33,6 +33,7 @@
 <script>
 import brand from "@/api/product/brand";
 import SingleUpload from "@/components/upload/singleUpload";
+import singleUpload from "@/components/upload/singleUpload";
 
 export default {
   components: {SingleUpload},

@@ -5,7 +5,7 @@
       :data="dataObj"
       list-type="picture"
       :multiple="false"
-      :show-file-list="showList"
+      :show-file-list="showFileList"
       :file-list="fileList"
       :before-upload="beforeUpload"
       :on-remove="handleRemove"
@@ -39,6 +39,17 @@ export default {
         return null;
       }
     },
+    fileList: {
+      get: function () {
+        return this.showFileList ? [{
+          name: this.imageName,
+          url: this.imageUrl
+        }] : []
+      },
+      set: function (newValue) {
+        return newValue
+      }
+    },
     showFileList: {
       get: function () {
         return this.value !== null && this.value !== '' && this.value !== undefined;
@@ -58,12 +69,11 @@ export default {
         host: '',
         // callback:'',
       },
-      fileList: [{
-        name: this.imageName,
-        url: this.imageUrl
-      }],
-      dialogVisible: false,
-      showList: false
+      // fileList: [{
+      //   name: this.imageName,
+      //   url: this.imageUrl
+      // }],
+      dialogVisible: false
     };
   },
   methods: {
@@ -78,7 +88,6 @@ export default {
     },
     async beforeUpload(file) {
       let {data} = await policy.getPolicy();
-      console.log(data)
       this.dataObj.policy = data.policy;
       this.dataObj.signature = data.signature;
       this.dataObj.ossaccessKeyId = data.accessid;
