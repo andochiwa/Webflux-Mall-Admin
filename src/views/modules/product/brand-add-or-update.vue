@@ -3,7 +3,7 @@
     :title="!dataForm.id ? '新增' : '修改'"
     :close-on-click-modal="false"
     :visible.sync="visible">
-    <el-form :model="dataForm" :rules="dataRule" ref="dataForm" @keyup.enter.native="dataFormSubmit()" label-width="80px">
+    <el-form :model="dataForm" :rules="dataRule" ref="dataForm" @keyup.enter.native="dataFormSubmit()" label-width="120px">
     <el-form-item label="品牌名" prop="name">
       <el-input v-model="dataForm.name" placeholder="品牌名"></el-input>
     </el-form-item>
@@ -13,8 +13,8 @@
     <el-form-item label="介绍" prop="description">
       <el-input v-model="dataForm.description" placeholder="介绍"></el-input>
     </el-form-item>
-    <el-form-item label="显示状态[0-不显示；1-显示]" prop="showStatus">
-      <el-input v-model="dataForm.showStatus" placeholder="显示状态[0-不显示；1-显示]"></el-input>
+    <el-form-item label="显示状态" prop="showStatus">
+      <el-switch v-model="dataForm.showStatus" :active-value="1" :inactive-value="0" active-color="#13ce66" inactive-color="#ff4949"/>
     </el-form-item>
     <el-form-item label="检索首字母" prop="firstLetter">
       <el-input v-model="dataForm.firstLetter" placeholder="检索首字母"></el-input>
@@ -41,7 +41,7 @@
           name: '',
           logo: '',
           description: '',
-          showStatus: '',
+          showStatus: 1,
           firstLetter: '',
           sort: ''
         },
@@ -97,7 +97,7 @@
               this.visible = false
               this.$emit('refreshDataList')
             } else {
-              this.$message.error("data.data.msg")
+              this.$message.error(data.data.msg)
             }
           }
         })
