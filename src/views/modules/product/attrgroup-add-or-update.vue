@@ -2,6 +2,8 @@
   <el-dialog
     :title="!dataForm.id ? '新增' : '修改'"
     :close-on-click-modal="false"
+    @close="dialogClose"
+    :showClose="false"
     :visible.sync="visible">
     <el-form :model="dataForm" :rules="dataRule" ref="dataForm" @keyup.enter.native="dataFormSubmit()"
              label-width="120px">
@@ -19,8 +21,9 @@
       </el-form-item>
       <el-form-item label="所属分类id" prop="catelogId">
         <el-cascader
-          v-model="dataForm.catelogIds"
+          v-model="dataForm.catelogPath"
           :options="categoryTree"
+          filterable
           :props="defaultProps"/>
       </el-form-item>
     </el-form>
@@ -51,7 +54,7 @@ export default {
         sort: '',
         description: '',
         icon: '',
-        catelogIds: [],
+        catelogPath: [],
         catelogId: 0
       },
       dataRule: {
@@ -79,6 +82,7 @@ export default {
       this.visible = true
       this.$nextTick(async () => {
         this.$refs['dataForm'].resetFields()
+        console.log("data pre=", this.dataForm)
         if (this.dataForm.id) {
           const {data} = await attrgroup.getById(id)
           if (data && data.data.code === 200) {
@@ -87,6 +91,7 @@ export default {
             this.dataForm.description = data.data.attrGroup.description
             this.dataForm.icon = data.data.attrGroup.icon
             this.dataForm.catelogId = data.data.attrGroup.catelogId
+            this.dataForm.catelogPath = data.data.attrGroup.catelogPath
           }
         }
       })
@@ -96,7 +101,7 @@ export default {
       this.$refs['dataForm'].validate(async (valid) => {
         if (valid) {
           this.dataForm.id = this.dataForm.id || undefined
-          this.dataForm.catelogId = this.dataForm.catelogIds[this.dataForm.catelogIds.length - 1]
+          this.dataForm.catelogId = this.dataForm.catelogPath[this.dataForm.catelogPath.length - 1]
           const {data} = !this.dataForm.id ? await attrgroup.save(this.dataForm) : await attrgroup.update(this.dataForm)
           if (data && data.data.code === 200) {
             this.$message.success("操作成功")
@@ -111,6 +116,9 @@ export default {
     async getTreeData() {
       const {data} = await category.getTreeData();
       this.categoryTree = data.data.category;
+    },
+    dialogClose() {
+      this.dataForm.catelogPath = []
     },
   },
   created() {
