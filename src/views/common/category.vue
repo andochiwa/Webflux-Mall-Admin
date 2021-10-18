@@ -4,6 +4,7 @@
     :props="defaultProps"
     node-key="id"
     ref="menuTree"
+    @node-click="nodeClick"
   >
   </el-tree>
 </template>
@@ -30,6 +31,9 @@ export default {
       const {data} = await category.getTreeData();
       this.menus = data.data.category;
     },
+    nodeClick(data, node, component) {
+      this.$emit("tree-node-click", data, node, component)
+    }
   }
 }
 </script>

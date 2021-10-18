@@ -12,6 +12,15 @@ export default {
       }
     })
   },
+  getListPaginationByCategoryId(page, limit, key, categoryId) {
+    return httpRequest({
+      url: `product/attrgroup/pagination/${categoryId}`,
+      method: `get`,
+      params: {
+        page, limit, key
+      }
+    })
+  },
   deleteByIds(ids) {
     return httpRequest({
       url: `product/attrgroup`,

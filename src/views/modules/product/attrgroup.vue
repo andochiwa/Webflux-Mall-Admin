@@ -2,7 +2,7 @@
   <div>
     <el-row :gutter="20">
       <el-col :span="6">
-        <category/>
+        <category @tree-node-click="treeNodeClick"/>
       </el-col>
       <el-col :span="18">
         <div class="mod-config">
@@ -114,7 +114,8 @@ export default {
       totalPage: 0,
       dataListLoading: false,
       dataListSelections: [],
-      addOrUpdateVisible: false
+      addOrUpdateVisible: false,
+      catId: 0
     }
   },
   activated() {
@@ -122,9 +123,10 @@ export default {
   },
   methods: {
     // 获取数据列表
-    async getDataList() {
+    async getDataList(categoryId = 0) {
       this.dataListLoading = true
-      const {data} = await attrgroup.getListPagination(this.pageIndex, this.pageSize, this.dataForm.key)
+      const {data} = categoryId === 0 ? await attrgroup.getListPagination(this.pageIndex, this.pageSize, this.dataForm.key)
+        : await attrgroup.getListPaginationByCategoryId(this.pageIndex, this.pageSize, this.dataForm.key, categoryId)
       if (data && data.data.code === 200) {
         this.dataList = data.data.attrgroup
         this.totalPage = data.data.totalCount
@@ -138,12 +140,12 @@ export default {
     sizeChangeHandle(val) {
       this.pageSize = val
       this.pageIndex = 1
-      this.getDataList()
+      this.getDataList(this.catId)
     },
     // 当前页
     currentChangeHandle(val) {
       this.pageIndex = val
-      this.getDataList()
+      this.getDataList(this.catId)
     },
     // 多选
     selectionChangeHandle(val) {
@@ -176,7 +178,17 @@ export default {
       } else {
         this.$message.error(data.data.msg)
       }
-      await this.getDataList()
+      await this.getDataList(this.catId)
+    },
+    // 树节点被点击
+    treeNodeClick(data, node, component) {
+      if (node.level === 3) {
+        this.catId = data.id
+        this.getDataList(data.id)
+      } else {
+        this.catId = 0
+        this.getDataList()
+      }
     }
   }
 }

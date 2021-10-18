@@ -18,7 +18,10 @@
         <el-input v-model="dataForm.icon" placeholder="组图标"></el-input>
       </el-form-item>
       <el-form-item label="所属分类id" prop="catelogId">
-        <el-input v-model="dataForm.catelogId" placeholder="所属分类id"></el-input>
+        <el-cascader
+          v-model="dataForm.catelogIds"
+          :options="categoryTree"
+          :props="defaultProps"/>
       </el-form-item>
     </el-form>
     <span slot="footer" class="dialog-footer">
@@ -30,18 +33,26 @@
 
 <script>
 import attrgroup from "@/api/product/attrgroup";
+import category from "@/api/product/category";
 
 export default {
   data() {
     return {
       visible: false,
+      defaultProps: {
+        value: "id",
+        children: "children",
+        label: "name"
+      },
+      categoryTree: [],
       dataForm: {
         id: 0,
         attrGroupName: '',
         sort: '',
         description: '',
         icon: '',
-        catelogId: ''
+        catelogIds: [],
+        catelogId: 0
       },
       dataRule: {
         attrGroupName: [
@@ -84,7 +95,9 @@ export default {
     dataFormSubmit() {
       this.$refs['dataForm'].validate(async (valid) => {
         if (valid) {
-          const {data} = !this.dataForm.id? await attrgroup.save(this.dataForm) : await attrgroup.update(this.dataForm)
+          this.dataForm.id = this.dataForm.id || undefined
+          this.dataForm.catelogId = this.dataForm.catelogIds[this.dataForm.catelogIds.length - 1]
+          const {data} = !this.dataForm.id ? await attrgroup.save(this.dataForm) : await attrgroup.update(this.dataForm)
           if (data && data.data.code === 200) {
             this.$message.success("操作成功")
           } else {
@@ -94,7 +107,14 @@ export default {
           this.$emit('refreshDataList')
         }
       })
-    }
+    },
+    async getTreeData() {
+      const {data} = await category.getTreeData();
+      this.categoryTree = data.data.category;
+    },
+  },
+  created() {
+    this.getTreeData()
   }
 }
 </script>
