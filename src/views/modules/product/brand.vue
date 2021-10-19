@@ -55,6 +55,7 @@
       <el-table-column
         fixed="right" header-align="center" align="center" width="150" label="操作">
         <template slot-scope="scope">
+          <el-button type="text" size="small" @click="updateCatelogHandle(scope.row.id)">关联分类</el-button>
           <el-button type="text" size="small" @click="addOrUpdateHandle(scope.row.id)">修改</el-button>
           <el-button type="text" size="small" @click="deleteHandle(scope.row.id)">删除</el-button>
         </template>
@@ -71,12 +72,44 @@
     </el-pagination>
     <!-- 弹窗, 新增 / 修改 -->
     <add-or-update v-if="addOrUpdateVisible" ref="addOrUpdate" @refreshDataList="getDataList"></add-or-update>
+
+    <el-dialog title="关联分类" :visible.sync="cateRelationDialogVisible" width="30%">
+      <el-popover placement="right-end" v-model="popCatelogSelectVisible">
+        <category-cascader :catelogPath.sync="catelogPath"></category-cascader>
+        <div style="text-align: right; margin: 0">
+          <el-button size="mini" type="text" @click="popCatelogSelectVisible = false">取消</el-button>
+          <el-button type="primary" size="mini" @click="addCatelogSelect">确定</el-button>
+        </div>
+        <el-button slot="reference">新增关联</el-button>
+      </el-popover>
+      <el-table :data="cateRelationTableData" style="width: 100%">
+        <el-table-column prop="id" label="#"></el-table-column>
+        <el-table-column prop="brandName" label="品牌名"></el-table-column>
+        <el-table-column prop="catelogName" label="分类名"></el-table-column>
+        <el-table-column fixed="right" header-align="center" align="center" label="操作">
+          <template slot-scope="scope">
+            <el-button
+              type="text"
+              size="small"
+              @click="deleteCateRelationHandle(scope.row.id)"
+            >移除
+            </el-button>
+          </template>
+        </el-table-column>
+      </el-table>
+      <span slot="footer" class="dialog-footer">
+        <el-button @click="cateRelationDialogVisible = false">取 消</el-button>
+        <el-button type="primary" @click="cateRelationDialogVisible = false">确 定</el-button>
+      </span>
+    </el-dialog>
   </div>
 </template>
 
 <script>
 import AddOrUpdate from './brand-add-or-update'
 import brand from "@/api/product/brand";
+import categorybrandrelation from "@/api/product/categorybrandrelation";
+import CategoryCascader from "@/views/common/category-cascader"
 
 export default {
   data() {
@@ -90,11 +123,15 @@ export default {
       totalPage: 0,
       dataListLoading: false,
       dataListSelections: [],
-      addOrUpdateVisible: false
+      addOrUpdateVisible: false,
+      cateRelationDialogVisible: false,
+      popCatelogSelectVisible: false,
+      catelogPath: [],
+      cateRelationTableData: []
     }
   },
   components: {
-    AddOrUpdate
+    AddOrUpdate, CategoryCascader
   },
   activated() {
     this.getDataList()
@@ -136,10 +173,38 @@ export default {
       })
     },
     async changeStatus(brandData) {
-      let { data } = await brand.update(brandData);
+      let {data} = await brand.update(brandData);
       if (data.data.code === 200) {
         this.$message.success("状态更新成功")
+      } else {
+        this.$message.error(data.data.msg)
+        await this.getDataList()
       }
+    },
+    updateCatelogHandle(brandId) {
+      this.cateRelationDialogVisible = true;
+      this.brandId = brandId;
+      this.getCateRelation();
+    },
+    async getCateRelation() {
+      const {data} = await categorybrandrelation.getCatelogList(this.brandId)
+      if (data.data.code === 200) {
+        this.cateRelationTableData = data.data.categoryBrandRelation
+      } else {
+        this.$message.error(data.data.msg)
+      }
+    },
+    async deleteCateRelationHandle(id) {
+      await categorybrandrelation.deleteById(id)
+      await this.getCateRelation()
+    },
+    async addCatelogSelect() {
+      this.popCatelogSelectVisible = false;
+      await categorybrandrelation.save({
+        brandId: this.brandId,
+        catelogId: this.catelogPath[this.catelogPath.length - 1]
+      })
+      await this.getCateRelation()
     },
     // 删除
     async deleteHandle(id) {
@@ -157,16 +222,16 @@ export default {
         return
       }
       const {data} = await brand.deleteByIds(ids)
-        if (data.data && data.data.code === 200) {
-          this.$message({
-            message: '操作成功',
-            type: 'success',
-          })
-        } else {
-          this.$message.error(data.data.msg)
-        }
-        await this.getDataList()
+      if (data.data && data.data.code === 200) {
+        this.$message({
+          message: '操作成功',
+          type: 'success',
+        })
+      } else {
+        this.$message.error(data.data.msg)
       }
+      await this.getDataList()
+    }
     }
   }
 </script>
