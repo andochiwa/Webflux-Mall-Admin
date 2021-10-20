@@ -11,7 +11,8 @@
               <el-input v-model="dataForm.key" placeholder="参数名" clearable></el-input>
             </el-form-item>
             <el-form-item>
-              <el-button @click="getDataList()">查询</el-button>
+              <el-button @click="getDataList(catId)">查询</el-button>
+              <el-button type="success" @click="getDataList(0)">查询全部</el-button>
               <el-button v-if="isAuth('product:attrgroup:save')" type="primary" @click="addOrUpdateHandle()">新增
               </el-button>
               <el-button v-if="isAuth('product:attrgroup:delete')" type="danger" @click="deleteHandle()"
@@ -74,6 +75,7 @@
               width="150"
               label="操作">
               <template slot-scope="scope">
+                <el-button type="text" size="small" @click="relationHandle(scope.row.id)">关联</el-button>
                 <el-button type="text" size="small" @click="addOrUpdateHandle(scope.row.id)">修改</el-button>
                 <el-button type="text" size="small" @click="deleteHandle(scope.row.id)">删除</el-button>
               </template>
@@ -89,7 +91,9 @@
             layout="total, sizes, prev, pager, next, jumper">
           </el-pagination>
           <!-- 弹窗, 新增 / 修改 -->
-          <add-or-update v-if="addOrUpdateVisible" ref="addOrUpdate" @refreshDataList="getDataList"></add-or-update>
+          <add-or-update v-if="addOrUpdateVisible" ref="addOrUpdate" @refreshDataList="getDataList(catId)"></add-or-update>
+          <!-- 处理关联关系 -->
+          <relation-update v-if="relationVisible" ref="relationUpdate" @refreshData="getDataList(catId)"></relation-update>
         </div>
       </el-col>
     </el-row>
@@ -100,9 +104,10 @@
 import Category from "@/views/common/category";
 import AddOrUpdate from "@/views/modules/product/attrgroup-add-or-update"
 import attrgroup from "@/api/product/attrgroup";
+import RelationUpdate from "./attr-group-relation"
 
 export default {
-  components: {Category, AddOrUpdate},
+  components: {Category, AddOrUpdate, RelationUpdate},
   data() {
     return {
       dataForm: {
@@ -115,7 +120,8 @@ export default {
       dataListLoading: false,
       dataListSelections: [],
       addOrUpdateVisible: false,
-      catId: 0
+      catId: 0,
+      relationVisible: false
     }
   },
   activated() {
@@ -189,7 +195,14 @@ export default {
         this.catId = 0
         this.getDataList()
       }
-    }
+    },
+    //处理分组与属性的关联
+    relationHandle(groupId) {
+      this.relationVisible = true;
+      this.$nextTick(() => {
+        this.$refs.relationUpdate.init(groupId);
+      });
+    },
   }
 }
 </script>
