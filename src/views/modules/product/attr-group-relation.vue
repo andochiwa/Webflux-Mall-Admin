@@ -19,7 +19,7 @@
             style="width: 100%;"
           >
             <el-table-column type="selection" header-align="center" align="center"></el-table-column>
-            <el-table-column prop="attrId" header-align="center" align="center" label="属性id"></el-table-column>
+            <el-table-column prop="id" header-align="center" align="center" label="属性id"></el-table-column>
             <el-table-column prop="attrName" header-align="center" align="center" label="属性名"></el-table-column>
             <el-table-column prop="icon" header-align="center" align="center" label="属性图标"></el-table-column>
             <el-table-column prop="valueSelect" header-align="center" align="center" label="可选值列表"></el-table-column>
@@ -36,17 +36,12 @@
         </div>
         <div slot="footer" class="dialog-footer">
           <el-button @click="innerVisible = false">取 消</el-button>
-          <el-button type="primary" @click="submitAddRealtion">确认新增</el-button>
+          <el-button :disabled="innerdataListSelections.length <= 0" type="primary" @click="submitAddRealtion">确认新增</el-button>
         </div>
       </el-dialog>
       <el-row>
         <el-col :span="24">
           <el-button type="primary" @click="addRelation">新建关联</el-button>
-          <el-button
-            type="danger"
-            @click="batchDeleteRelation"
-            :disabled="dataListSelections.length <= 0"
-          >批量删除</el-button>
           <!--  -->
           <el-table
             :data="relationAttrs"
@@ -55,7 +50,7 @@
             border
           >
             <el-table-column type="selection" header-align="center" align="center" width="50"></el-table-column>
-            <el-table-column prop="attrId" label="#"></el-table-column>
+            <el-table-column prop="id" label="#"></el-table-column>
             <el-table-column prop="attrName" label="属性名"></el-table-column>
             <el-table-column prop="valueSelect" label="可选值">
               <template slot-scope="scope">
@@ -72,7 +67,7 @@
             </el-table-column>
             <el-table-column fixed="right" header-align="center" align="center" label="操作">
               <template slot-scope="scope">
-                <el-button type="text" size="small" @click="relationRemove(scope.row.attrId)">移除</el-button>
+                <el-button type="text" size="small" @click="relationRemove(scope.row.id)">移除</el-button>
               </template>
             </el-table-column>
           </el-table>
@@ -83,7 +78,9 @@
 </template>
 
 <script>
-import attrgrouprelation from "@/api/product/attrgrouprelation";
+import attr from "@/api/product/attr";
+import attrgroup from "@/api/product/attrgroup";
+
 export default {
   components: {},
   props: {},
@@ -117,68 +114,39 @@ export default {
       this.getDataList();
       this.innerVisible = true;
     },
-    batchDeleteRelation(val) {
-      let postData = [];
-      this.dataListSelections.forEach(item => {
-        postData.push({ attrId: item.attrId, attrGroupId: this.attrGroupId });
-      });
-      this.$http({
-        url: this.$http.adornUrl("/product/attrgroup/attr/relation/delete"),
-        method: "post",
-        data: this.$http.adornData(postData, false)
-      }).then(({ data }) => {
-        if (data.code == 0) {
-          this.$message({ type: "success", message: "删除成功" });
-          this.init(this.attrGroupId);
-        } else {
-          this.$message({ type: "error", message: data.msg });
-        }
-      });
-    },
     //移除关联
-    relationRemove(attrId) {
-      let data = [];
-      data.push({ attrId, attrGroupId: this.attrGroupId });
-      this.$http({
-        url: this.$http.adornUrl("/product/attrgroup/attr/relation/delete"),
-        method: "post",
-        data: this.$http.adornData(data, false)
-      }).then(({ data }) => {
-        if (data.code == 0) {
-          this.$message({ type: "success", message: "删除成功" });
-          this.init(this.attrGroupId);
-        } else {
-          this.$message({ type: "error", message: data.msg });
-        }
-      });
+    async relationRemove(id) {
+      const {data} = await attr.deleteGroupRelation(id, this.attrGroupId)
+      if (data && data.data.code === 200) {
+        this.$message.success("删除成功")
+        await this.init(this.attrGroupId)
+      } else {
+        this.$message.error(data.data.msg)
+      }
     },
-    submitAddRealtion() {
+    async submitAddRealtion() {
       this.innerVisible = false;
       //准备数据
       console.log("准备新增的数据", this.innerdataListSelections);
       if (this.innerdataListSelections.length > 0) {
         let postData = [];
         this.innerdataListSelections.forEach(item => {
-          postData.push({ attrId: item.attrId, attrGroupId: this.attrGroupId });
+          postData.push({attrId: item.id, attrGroupId: this.attrGroupId});
         });
-        this.$http({
-          url: this.$http.adornUrl("/product/attrgroup/attr/relation"),
-          method: "post",
-          data: this.$http.adornData(postData, false)
-        }).then(({ data }) => {
-          if (data.code === 0) {
-            this.$message({ type: "success", message: "新增关联成功" });
-          }
+        const {data} = await attrgroup.saveAllAttrRelation(postData)
+        if (data && data.data.code === 200) {
+          this.$message.success("新增关联成功")
           this.$emit("refreshData");
-          this.init(this.attrGroupId);
-        });
-      } else {
+          await this.init(this.attrGroupId);
+        } else {
+          this.$message.error(data.data.msg)
+        }
       }
     },
     async init(id) {
       this.attrGroupId = id || 0;
       this.visible = true;
-      const {data} = await attrgrouprelation.getAttrByGroup(this.attrGroupId)
+      const {data} = await attrgroup.getAttrRelation(this.attrGroupId)
       if (data.data.code === 200) {
         this.relationAttrs = data.data.attr
       }
@@ -187,28 +155,17 @@ export default {
 
     //========
     // 获取数据列表
-    getDataList() {
+    async getDataList() {
       this.dataListLoading = true;
-      this.$http({
-        url: this.$http.adornUrl(
-          "/product/attrgroup/" + this.attrGroupId + "/noattr/relation"
-        ),
-        method: "get",
-        params: this.$http.adornParams({
-          page: this.pageIndex,
-          limit: this.pageSize,
-          key: this.dataForm.key
-        })
-      }).then(({ data }) => {
-        if (data && data.code === 0) {
-          this.dataList = data.page.list;
-          this.totalPage = data.page.totalCount;
-        } else {
-          this.dataList = [];
-          this.totalPage = 0;
-        }
-        this.dataListLoading = false;
-      });
+      const {data} = await attrgroup.getNoAttrRelation(this.attrGroupId, this.pageIndex, this.pageSize, this.dataForm.key)
+      if (data && data.data.code === 200) {
+        this.dataList = data.data.attr
+        this.totalPage = data.data.totalCount
+      } else {
+        this.dataList = [];
+        this.totalPage = 0;
+      }
+      this.dataListLoading = false;
     },
     // 每页数
     sizeChangeHandle(val) {

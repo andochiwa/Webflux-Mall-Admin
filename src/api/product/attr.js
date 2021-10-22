@@ -35,4 +35,11 @@ export default {
       data: attrIds
     })
   },
+  deleteGroupRelation(attrId, attrGroupId) {
+    return httpRequest({
+      url: `product/attr/attrgroup/relation`,
+      method: `delete`,
+      data: {attrId, attrGroupId}
+    })
+  },
 }

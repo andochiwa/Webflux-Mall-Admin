@@ -53,5 +53,25 @@ export default {
       url: `product/attrgroup/${id}`,
       method: `delete`
     })
+  },
+  getAttrRelation(groupId) {
+    return httpRequest({
+      url: `product/attrgroup/${groupId}/attr`,
+      method: `get`
+    })
+  },
+  getNoAttrRelation(groupId, page, limit, key) {
+    return httpRequest({
+      url: `product/attrgroup/${groupId}/no-attr`,
+      method: `get`,
+      params: {page, limit, key}
+    })
+  },
+  saveAllAttrRelation(attrGroupRelation) {
+    return httpRequest({
+      url: `product/attrgroup/attr`,
+      method: `post`,
+      data: attrGroupRelation
+    })
   }
 }
