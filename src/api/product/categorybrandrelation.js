@@ -39,5 +39,11 @@ export default {
       url: `product/categorybrandrelation/catelog/${brandId}`,
       method: `get`,
     })
+  },
+  getBrandList(catelogId) {
+    return httpRequest({
+      url: `product/categorybrandrelation/brand/${catelogId}`,
+      method: `get`
+    })
   }
 }

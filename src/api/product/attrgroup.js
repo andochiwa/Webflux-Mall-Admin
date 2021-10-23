@@ -73,5 +73,11 @@ export default {
       method: `post`,
       data: attrGroupRelation
     })
+  },
+  getAttrGroupWithAttrsByCatelogId(catelogId) {
+    return httpRequest({
+      url: `product/attrgroup/${catelogId}/with-attr`,
+      method: `get`
+    })
   }
 }
