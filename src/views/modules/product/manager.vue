@@ -36,7 +36,7 @@
           <br />
           商品描述：{{scope.row.skuDesc}}
           <br />
-          分类ID：{{scope.row.catalogId}}
+          分类ID：{{ scope.row.catelogId }}
           <br />
           SpuID：{{scope.row.spuId}}
           <br />
@@ -93,6 +93,8 @@
 <script>
 import CategoryCascader from "@/views/common/category-cascader";
 import BrandSelect from "@/views/common/brand-select";
+import skuInfo from "@/api/product/skuInfo";
+
 export default {
   data() {
     return {
@@ -104,7 +106,7 @@ export default {
         catelogId: 0,
         price: {
           min: 0,
-          max: 0
+          max: 20000
         }
       },
       dataList: [],
@@ -132,38 +134,34 @@ export default {
     //处理更多指令
     handleCommand(row, command) {
       console.log("~~~~~", row, command);
-      if ("stockSettings" == command) {
-        this.$router.push({ path: "/ware-sku", query: { skuId: row.skuId } });
+      if ("stockSettings" === command) {
+        this.$router.push({path: "/ware-sku", query: {skuId: row.skuId}});
       }
     },
     searchSkuInfo() {
       this.getDataList();
     },
     // 获取数据列表
-    getDataList() {
+    async getDataList() {
       this.dataListLoading = true;
-      this.$http({
-        url: this.$http.adornUrl("/product/skuinfo/list"),
-        method: "get",
-        params: this.$http.adornParams({
-          page: this.pageIndex,
-          limit: this.pageSize,
-          key: this.dataForm.key,
-          catelogId: this.dataForm.catelogId,
-          brandId: this.dataForm.brandId,
-          min: this.dataForm.price.min,
-          max: this.dataForm.price.max
-        })
-      }).then(({ data }) => {
-        if (data && data.code === 0) {
-          this.dataList = data.page.list;
-          this.totalPage = data.page.totalCount;
-        } else {
-          this.dataList = [];
-          this.totalPage = 0;
-        }
-        this.dataListLoading = false;
-      });
+      const {data} = await skuInfo.getListOnConditions(
+        this.pageIndex,
+        this.pageSize,
+        this.dataForm.key,
+        this.dataForm.catelogId,
+        this.dataForm.brandId,
+        this.dataForm.price.min,
+        this.dataForm.price.max
+      )
+
+      if (data && data.code === 200) {
+        this.dataList = data.data.list;
+        this.totalPage = data.data.totalCount;
+      } else {
+        this.dataList = [];
+        this.totalPage = 0;
+      }
+      this.dataListLoading = false;
     },
     // 每页数
     sizeChangeHandle(val) {
