@@ -11,14 +11,14 @@
       <el-table-column prop="id" header-align="center" align="center" label="id"></el-table-column>
       <el-table-column prop="spuName" header-align="center" align="center" label="名称"></el-table-column>
       <el-table-column prop="spuDescription" header-align="center" align="center" label="描述"></el-table-column>
-      <el-table-column prop="catalogId" header-align="center" align="center" label="分类"></el-table-column>
+      <el-table-column prop="catelogId" header-align="center" align="center" label="分类"></el-table-column>
       <el-table-column prop="brandId" header-align="center" align="center" label="品牌"></el-table-column>
       <el-table-column prop="weight" header-align="center" align="center" label="重量"></el-table-column>
       <el-table-column prop="publishStatus" header-align="center" align="center" label="上架状态">
         <template slot-scope="scope">
-          <el-tag v-if="scope.row.publishStatus == 0">新建</el-tag>
-          <el-tag v-if="scope.row.publishStatus == 1">已上架</el-tag>
-          <el-tag v-if="scope.row.publishStatus == 2">已下架</el-tag>
+          <el-tag v-if="scope.row.publishStatus === 0">新建</el-tag>
+          <el-tag v-if="scope.row.publishStatus === 1">已上架</el-tag>
+          <el-tag v-if="scope.row.publishStatus === 2">已下架</el-tag>
         </template>
       </el-table-column>
       <el-table-column prop="createTime" header-align="center" align="center" label="创建时间"></el-table-column>
@@ -26,7 +26,7 @@
       <el-table-column fixed="right" header-align="center" align="center" width="150" label="操作">
         <template slot-scope="scope">
           <el-button
-            v-if="scope.row.publishStatus == 0"
+            v-if="scope.row.publishStatus === 0"
             type="text"
             size="small"
             @click="productUp(scope.row.id)"
@@ -49,6 +49,8 @@
 </template>
 
 <script>
+import spuInfo from "@/api/product/spuInfo";
+
 export default {
   data() {
     return {
@@ -97,31 +99,27 @@ export default {
       console.log(row);
       this.$router.push({
         path: "/product-attrupdate",
-        query: { spuId: row.id, catalogId: row.catalogId }
+        query: { spuId: row.id, catelogId: row.catelogId }
       });
     },
     // 获取数据列表
-    getDataList() {
+    async getDataList() {
       this.dataListLoading = true;
       let param = {};
       Object.assign(param, this.dataForm, {
         page: this.pageIndex,
         limit: this.pageSize
       });
-      this.$http({
-        url: this.$http.adornUrl("/product/spuinfo/list"),
-        method: "get",
-        params: this.$http.adornParams(param)
-      }).then(({ data }) => {
-        if (data && data.code === 0) {
-          this.dataList = data.page.list;
-          this.totalPage = data.page.totalCount;
-        } else {
-          this.dataList = [];
-          this.totalPage = 0;
-        }
-        this.dataListLoading = false;
-      });
+      console.log("param", param)
+      const {data} = await spuInfo.getOnConditions(this.pageIndex, this.pageSize, this.dataForm.key, this.dataForm.catelogId, this.dataForm.brandId, this.dataForm.status)
+      if (data && data.code === 200) {
+        this.dataList = data.data.list;
+        this.totalPage = data.data.totalCount;
+      } else {
+        this.dataList = [];
+        this.totalPage = 0;
+      }
+      this.dataListLoading = false;
     },
     // 每页数
     sizeChangeHandle(val) {

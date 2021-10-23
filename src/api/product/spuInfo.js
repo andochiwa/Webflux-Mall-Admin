@@ -8,4 +8,11 @@ export default {
       data
     })
   },
+  getOnConditions(page, limit, key, catelogId, brandId, status, order, sortField) {
+    return httpRequest({
+      url: `product/spuinfo/pagination`,
+      method: `get`,
+      params: {page, limit, key, catelogId, brandId, status, order, sortField }
+    })
+  }
 }

@@ -39,6 +39,9 @@ export default {
   //方法集合
   methods: {
     async getCatBrands() {
+      if (!this.catId) {
+        return
+      }
       const {data} = await categorybrandrelation.getBrandList(this.catId)
       this.brands = data.data.list
     }
