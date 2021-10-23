@@ -10,7 +10,7 @@
           <el-step title="保存完成"></el-step>
         </el-steps>
       </el-col>
-      <el-col :span="24" v-show="step==0">
+      <el-col :span="24" v-show="step===0">
         <el-card class="box-card" style="width:80%;margin:20px auto">
           <el-form ref="spuBaseForm" :model="spu" label-width="120px" :rules="spuBaseInfoRules">
             <el-form-item label="商品名称" prop="spuName">
@@ -19,7 +19,7 @@
             <el-form-item label="商品描述" prop="spuDescription">
               <el-input v-model="spu.spuDescription"></el-input>
             </el-form-item>
-            <el-form-item label="选择分类" prop="catalogId">
+            <el-form-item label="选择分类" prop="catelogId">
               <category-cascader></category-cascader>
             </el-form-item>
             <el-form-item label="选择品牌" prop="brandId">
@@ -48,8 +48,8 @@
                 <template slot="prepend">成长值</template>
               </el-input-number>
             </el-form-item>
-            <el-form-item label="商品介绍" prop="decript">
-              <multi-upload v-model="spu.decript"></multi-upload>
+            <el-form-item label="商品介绍" prop="description">
+              <multi-upload v-model="spu.description"></multi-upload>
             </el-form-item>
 
             <el-form-item label="商品图集" prop="images">
@@ -61,7 +61,7 @@
           </el-form>
         </el-card>
       </el-col>
-      <el-col :span="24" v-show="step==1">
+      <el-col :span="24" v-show="step===1">
         <el-card class="box-card" style="width:80%;margin:20px auto">
           <el-tabs tab-position="left" style="width:98%">
             <el-tab-pane
@@ -73,17 +73,17 @@
               <el-form ref="form" :model="spu">
                 <el-form-item
                   :label="attr.attrName"
-                  v-for="(attr,aidx) in group.attrs"
-                  :key="attr.attrId"
+                  v-for="(attr,aidx) in group.attrList"
+                  :key="attr.id"
                 >
                   <el-input
-                    v-model="dataResp.baseAttrs[gidx][aidx].attrId"
+                    v-model="dataResp.baseAttrs[gidx][aidx].id"
                     type="hidden"
                     v-show="false"
                   ></el-input>
                   <el-select
                     v-model="dataResp.baseAttrs[gidx][aidx].attrValues"
-                    :multiple="attr.valueType == 1"
+                    multiple
                     filterable
                     allow-create
                     default-first-option
@@ -111,7 +111,7 @@
           </div>
         </el-card>
       </el-col>
-      <el-col :span="24" v-show="step==2">
+      <el-col :span="24" v-show="step===2">
         <el-card class="box-card" style="width:80%;margin:20px auto">
           <el-card class="box-card">
             <div slot="header" class="clearfix">
@@ -120,7 +120,7 @@
                 <el-form-item
                   :label="attr.attrName"
                   v-for="(attr,aidx) in dataResp.saleAttrs"
-                  :key="attr.attrId"
+                  :key="attr.id"
                 >
                   <el-input
                     v-model="dataResp.tempSaleAttrs[aidx].attrId"
@@ -129,7 +129,7 @@
                   ></el-input>
                   <el-checkbox-group v-model="dataResp.tempSaleAttrs[aidx].attrValues">
                     <el-checkbox
-                      v-if="dataResp.saleAttrs[aidx].valueSelect != ''"
+                      v-if="dataResp.saleAttrs[aidx].valueSelect !== ''"
                       :label="val"
                       v-for="val in dataResp.saleAttrs[aidx].valueSelect.split(';')"
                       :key="val"
@@ -160,7 +160,7 @@
           </el-card>
         </el-card>
       </el-col>
-      <el-col :span="24" v-show="step==3">
+      <el-col :span="24" v-show="step===3">
         <el-card class="box-card" style="width:80%;margin:20px auto">
           <el-table :data="spu.skus" style="width: 100%">
             <el-table-column label="属性组合">
@@ -227,7 +227,7 @@
                             ></el-checkbox>
                           </el-col>
                           <el-col :span="12">
-                            <el-tag v-if="scope.row.images[index].defaultImg == 1">
+                            <el-tag v-if="scope.row.images[index].defaultImg === 1">
                               <input
                                 type="radio"
                                 checked
@@ -333,10 +333,10 @@
           <el-button type="success" @click="submitSkus">下一步：保存商品信息</el-button>
         </el-card>
       </el-col>
-      <el-col :span="24" v-show="step==4">
+      <el-col :span="24" v-show="step===4">
         <el-card class="box-card" style="width:80%;margin:20px auto">
           <h1>保存成功</h1>
-          <el-button type="primary" @click="addAgian">继续添加</el-button>
+          <el-button type="primary" @click="addAgain">继续添加</el-button>
         </el-card>
       </el-col>
     </el-row>
@@ -347,6 +347,10 @@
 import CategoryCascader from "@/views/common/category-cascader";
 import BrandSelect from "@/views/common/brand-select";
 import MultiUpload from "@/components/upload/multiUpload";
+import memberLevel from "@/api/member/memberLevel";
+import attrgroup from "@/api/product/attrgroup";
+import attr from "@/api/product/attr";
+import spuInfo from "@/api/product/spuInfo";
 export default {
   components: { CategoryCascader, BrandSelect, MultiUpload },
   props: {},
@@ -362,11 +366,11 @@ export default {
         //要提交的数据
         spuName: "",
         spuDescription: "",
-        catalogId: 0,
+        catelogId: 0,
         brandId: "",
         weight: "",
         publishStatus: 0,
-        decript: [], //商品详情
+        description: [], //商品详情
         images: [], //商品图集，最后sku也可以新增
         bounds: {
           //积分
@@ -383,18 +387,18 @@ export default {
         spuDescription: [
           { required: true, message: "请编写一个简单描述", trigger: "blur" }
         ],
-        catalogId: [
+        catelogId: [
           { required: true, message: "请选择一个分类", trigger: "blur" }
         ],
         brandId: [
           { required: true, message: "请选择一个品牌", trigger: "blur" }
         ],
-        decript: [
-          { required: true, message: "请上传商品详情图集", trigger: "blur" }
-        ],
-        images: [
-          { required: true, message: "请上传商品图片集", trigger: "blur" }
-        ],
+        // description: [
+        //   { required: true, message: "请上传商品详情图集", trigger: "blur" }
+        // ],
+        // images: [
+        //   { required: true, message: "请上传商品图片集", trigger: "blur" }
+        // ],
         weight: [
           {
             type: "number",
@@ -439,7 +443,7 @@ export default {
     }
   },
   methods: {
-    addAgian() {
+    addAgain() {
       this.step = 0;
       this.resetSpuData();
     },
@@ -447,11 +451,11 @@ export default {
       this.spu = {
         spuName: "",
         spuDescription: "",
-        catalogId: 0,
+        catelogId: 0,
         brandId: "",
         weight: "",
         publishStatus: 0,
-        decript: [],
+        description: [],
         images: [],
         bounds: {
           buyBounds: 0,
@@ -461,24 +465,12 @@ export default {
         skus: []
       };
     },
-    handlePriceChange(scope, mpidx, e) {
-      this.spu.skus[scope.$index].memberPrice[mpidx].price = e;
+    handlePriceChange(scope, mpIdx, e) {
+      this.spu.skus[scope.$index].memberPrice[mpIdx].price = e;
     },
-    getMemberLevels() {
-      this.$http({
-        url: this.$http.adornUrl("/member/memberlevel/list"),
-        method: "get",
-        params: this.$http.adornParams({
-          page: 1,
-          limit: 500
-        })
-      })
-        .then(({ data }) => {
-          this.dataResp.memberLevels = data.page.list;
-        })
-        .catch(e => {
-          console.log(e);
-        });
+    async getMemberLevels() {
+      const {data} = await memberLevel.getList(1, 500)
+      this.dataResp.memberLevels = data.data.list;
     },
     showInput(idx) {
       console.log("``````", this.view);
@@ -492,7 +484,7 @@ export default {
       row.images[index].defaultImg = 1; //修改标志位;
       //修改其他人的标志位
       row.images.forEach((item, idx) => {
-        if (idx != index) {
+        if (idx !== index) {
           row.images[idx].defaultImg = 0;
         }
       });
@@ -501,7 +493,7 @@ export default {
       let inputValue = this.inputValue[idx].val;
       if (inputValue) {
         // this.dynamicTags.push(inputValue);
-        if (this.dataResp.saleAttrs[idx].valueSelect == "") {
+        if (this.dataResp.saleAttrs[idx].valueSelect === "") {
           this.dataResp.saleAttrs[idx].valueSelect = inputValue;
         } else {
           this.dataResp.saleAttrs[idx].valueSelect += ";" + inputValue;
@@ -528,7 +520,7 @@ export default {
         item.forEach(attr => {
           let { attrId, attrValues, showDesc } = attr;
           //跳过没有录入值的属性
-          if (attrValues != "") {
+          if (attrValues !== "") {
             if (attrValues instanceof Array) {
               //多个值用;隔开
               attrValues = attrValues.join(";");
@@ -555,9 +547,6 @@ export default {
       });
 
       let descartes = this.descartes(selectValues);
-      //[["黑色","6GB","移动"],["黑色","6GB","联通"],["黑色","8GB","移动"],["黑色","8GB","联通"],
-      //["白色","6GB","移动"],["白色","6GB","联通"],["白色","8GB","移动"],["白色","8GB","联通"],
-      //["蓝色","6GB","移动"],["蓝色","6GB","联通"],["蓝色","8GB","移动"],["蓝色","8GB","联通"]]
       console.log("生成的组合", JSON.stringify(descartes));
       //有多少descartes就有多少sku
       let skus = [];
@@ -583,7 +572,7 @@ export default {
         let memberPrices = [];
         if (this.dataResp.memberLevels.length > 0) {
           for (let i = 0; i < this.dataResp.memberLevels.length; i++) {
-            if (this.dataResp.memberLevels[i].priviledgeMemberPrice == 1) {
+            if (this.dataResp.memberLevels[i].privilegeMemberPrice === 1) {
               memberPrices.push({
                 id: this.dataResp.memberLevels[i].id,
                 name: this.dataResp.memberLevels[i].name,
@@ -630,94 +619,62 @@ export default {
       }
       return res;
     },
-    getShowSaleAttr() {
+    async getShowSaleAttr() {
       //获取当前分类可以使用的销售属性
       if (!this.dataResp.steped[1]) {
-        this.$http({
-          url: this.$http.adornUrl(
-            `/product/attr/sale/list/${this.spu.catalogId}`
-          ),
-          method: "get",
-          params: this.$http.adornParams({
-            page: 1,
-            limit: 500
-          })
-        }).then(({ data }) => {
-          this.dataResp.saleAttrs = data.page.list;
-          data.page.list.forEach(item => {
-            this.dataResp.tempSaleAttrs.push({
-              attrId: item.attrId,
-              attrValues: [],
-              attrName: item.attrName
-            });
-            this.inputVisible.push({ view: false });
-            this.inputValue.push({ val: "" });
+        const sale = 0
+        const {data} = await attr.getBaseAttrList(sale, this.spu.catelogId, 1, 500);
+        this.dataResp.saleAttrs = data.data.list;
+        data.data.list.forEach(item => {
+          this.dataResp.tempSaleAttrs.push({
+            attrId: item.id,
+            attrValues: [],
+            attrName: item.attrName
           });
-          this.dataResp.steped[1] = true;
+          this.inputVisible.push({ view: false });
+          this.inputValue.push({ val: "" });
         });
+        this.dataResp.steped[1] = true;
       }
     },
-    showBaseAttrs() {
+    async showBaseAttrs() {
       if (!this.dataResp.steped[0]) {
-        this.$http({
-          url: this.$http.adornUrl(
-            `/product/attrgroup/${this.spu.catalogId}/withattr`
-          ),
-          method: "get",
-          params: this.$http.adornParams({})
-        }).then(({ data }) => {
-          //先对表单的baseAttrs进行初始化
-          data.data.forEach(item => {
-            let attrArray = [];
-            item.attrs.forEach(attr => {
-              attrArray.push({
-                attrId: attr.attrId,
-                attrValues: "",
-                showDesc: attr.showDesc
-              });
+        const {data} = await attrgroup.getAttrGroupWithAttrsByCatelogId(this.spu.catelogId)
+        attrgroup.getAttrGroupWithAttrsByCatelogId(this.spu.catelogId)
+        data.data.list.forEach(item => {
+          let attrArray = [];
+          item.attrList.forEach(attr => {
+            attrArray.push({
+              attrId: attr.id,
+              attrValues: "",
+              showDesc: attr.showDesc
             });
-            this.dataResp.baseAttrs.push(attrArray);
           });
-          this.dataResp.steped[0] = 0;
-          this.dataResp.attrGroups = data.data;
-        });
+          this.dataResp.baseAttrs.push(attrArray);
+        })
+        this.dataResp.steped[0] = 0;
+        this.dataResp.attrGroups = data.data.list;
       }
     },
 
-    submitSkus() {
+    async submitSkus() {
       console.log("~~~~~", JSON.stringify(this.spu));
-      this.$confirm("将要提交商品数据，需要一小段时间，是否继续?", "提示", {
+      const confirm = await this.$confirm("将要提交商品数据，需要一小段时间，是否继续?", "提示", {
         confirmButtonText: "确定",
         cancelButtonText: "取消",
         type: "warning"
-      })
-        .then(() => {
-          this.$http({
-            url: this.$http.adornUrl("/product/spuinfo/save"),
-            method: "post",
-            data: this.$http.adornData(this.spu, false)
-          }).then(({ data }) => {
-            if (data.code == 0) {
-              this.$message({
-                type: "success",
-                message: "新增商品成功!"
-              });
-              this.step = 4;
-            } else {
-              this.$message({
-                type: "error",
-                message: "保存失败，原因【" + data.msg + "】"
-              });
-            }
-          });
-        })
-        .catch(e => {
-          console.log(e);
-          this.$message({
-            type: "info",
-            message: "已取消"
-          });
-        });
+      }).catch(() => {})
+      if (!confirm) {
+        this.$message.info("已取消")
+        return
+      }
+      const {data} = await spuInfo.saveFullReduction(this.spu)
+      if (data.data.code === 200) {
+        this.$message.success("新增商品成功")
+        this.step = 4;
+      } else {
+        this.$message.error(data.data.msg)
+      }
     },
     //笛卡尔积运算
     descartes(list) {
@@ -775,7 +732,7 @@ export default {
   created() {},
   mounted() {
     this.catPathSub = PubSub.subscribe("catPath", (msg, val) => {
-      this.spu.catalogId = val[val.length - 1];
+      this.spu.catelogId = val[val.length - 1];
     });
     this.brandIdSub = PubSub.subscribe("brandId", (msg, val) => {
       this.spu.brandId = val;

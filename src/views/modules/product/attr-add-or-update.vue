@@ -199,7 +199,6 @@ export default {
       this.dataForm.id = id || 0;
       this.dataForm.attrType = this.type;
       this.visible = true;
-      console.log("there", id)
       this.$nextTick(async () => {
         this.$refs["dataForm"].resetFields();
         if (this.dataForm.id) {
