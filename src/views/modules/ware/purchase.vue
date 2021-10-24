@@ -43,11 +43,11 @@
       <el-table-column prop="priority" header-align="center" align="center" label="优先级"></el-table-column>
       <el-table-column prop="status" header-align="center" align="center" label="状态">
         <template slot-scope="scope">
-          <el-tag v-if="scope.row.status == 0">新建</el-tag>
-          <el-tag type="info" v-if="scope.row.status == 1">已分配</el-tag>
-          <el-tag type="warning" v-if="scope.row.status == 2">已领取</el-tag>
-          <el-tag type="success" v-if="scope.row.status == 3">已完成</el-tag>
-          <el-tag type="danger" v-if="scope.row.status == 4">有异常</el-tag>
+          <el-tag v-if="scope.row.status === 0">新建</el-tag>
+          <el-tag type="info" v-if="scope.row.status === 1">已分配</el-tag>
+          <el-tag type="warning" v-if="scope.row.status === 2">已领取</el-tag>
+          <el-tag type="success" v-if="scope.row.status === 3">已完成</el-tag>
+          <el-tag type="danger" v-if="scope.row.status === 4">有异常</el-tag>
         </template>
       </el-table-column>
       <el-table-column prop="wareId" header-align="center" align="center" label="仓库id"></el-table-column>
@@ -59,7 +59,7 @@
           <el-button
             type="text"
             size="small"
-            v-if="scope.row.status==0||scope.row.status==1"
+            v-if="scope.row.status===0||scope.row.status===1"
             @click="opendrawer(scope.row)"
           >分配</el-button>
           <el-button type="text" size="small" @click="addOrUpdateHandle(scope.row.id)">修改</el-button>
@@ -97,6 +97,8 @@
 
 <script>
 import AddOrUpdate from "./purchase-add-or-update";
+import warePurchase from "@/api/ware/warePurchase";
+
 export default {
   data() {
     return {
@@ -124,7 +126,7 @@ export default {
     this.getDataList();
   },
   created() {
-    
+
   },
   methods: {
     opendrawer(row){
@@ -133,11 +135,10 @@ export default {
       this.caigoudialogVisible = true;
     },
     assignUser() {
-      let _this = this;
       let user = {};
-      this.userList.forEach(item=>{
-        if(item.userId == _this.userId){
-            user = item;
+      this.userList.forEach(item => {
+        if (item.userId === this.userId) {
+          user = item;
         }
       });
       this.caigoudialogVisible = false;
@@ -160,7 +161,7 @@ export default {
             type: "success",
             duration: 1500
           });
-          
+
           this.userId = "";
           this.getDataList();
         } else {
@@ -170,7 +171,7 @@ export default {
     },
     getUserList() {
       this.$http({
-        url: this.$http.adornUrl("/sys/user/list"),
+        url: this.$http.adornUrl("/admin/sys/user/list"),
         method: "get",
         params: this.$http.adornParams({
           page: 1,
@@ -181,26 +182,17 @@ export default {
       });
     },
     // 获取数据列表
-    getDataList() {
+    async getDataList() {
       this.dataListLoading = true;
-      this.$http({
-        url: this.$http.adornUrl("/ware/purchase/list"),
-        method: "get",
-        params: this.$http.adornParams({
-          page: this.pageIndex,
-          limit: this.pageSize,
-          key: this.dataForm.key
-        })
-      }).then(({ data }) => {
-        if (data && data.code === 0) {
-          this.dataList = data.page.list;
-          this.totalPage = data.page.totalCount;
-        } else {
-          this.dataList = [];
-          this.totalPage = 0;
-        }
-        this.dataListLoading = false;
-      });
+      let {data} = await warePurchase.getOnConditions(this.pageIndex, this.pageSize, this.dataForm.key, this.dataForm.status)
+      if (data && data.code === 200) {
+        this.dataList = data.data.list;
+        this.totalPage = data.data.totalCount;
+      } else {
+        this.dataList = [];
+        this.totalPage = 0;
+      }
+      this.dataListLoading = false
     },
     // 每页数
     sizeChangeHandle(val) {
@@ -225,13 +217,11 @@ export default {
       });
     },
     // 删除
-    deleteHandle(id) {
-      var ids = id
-        ? [id]
-        : this.dataListSelections.map(item => {
-            return item.id;
-          });
-      this.$confirm(
+    async deleteHandle(id) {
+      var ids = id ? [id] : this.dataListSelections.map(item => {
+        return item.id;
+      });
+      let confirm = await this.$confirm(
         `确定对[id=${ids.join(",")}]进行[${id ? "删除" : "批量删除"}]操作?`,
         "提示",
         {
@@ -239,26 +229,17 @@ export default {
           cancelButtonText: "取消",
           type: "warning"
         }
-      ).then(() => {
-        this.$http({
-          url: this.$http.adornUrl("/ware/purchase/delete"),
-          method: "post",
-          data: this.$http.adornData(ids, false)
-        }).then(({ data }) => {
-          if (data && data.code === 0) {
-            this.$message({
-              message: "操作成功",
-              type: "success",
-              duration: 1500,
-              onClose: () => {
-                this.getDataList();
-              }
-            });
-          } else {
-            this.$message.error(data.msg);
-          }
-        });
-      });
+      ).catch()
+      if (!confirm) {
+        return
+      }
+      let {data} = await warePurchase.delete(ids);
+      if (data && data.code === 200) {
+        this.$message.success("操作成功")
+        await this.getDataList()
+      } else {
+        this.$message.error(data.data.msg)
+      }
     }
   }
 };

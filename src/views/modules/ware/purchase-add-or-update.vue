@@ -16,27 +16,29 @@
 </template>
 
 <script>
-  export default {
-    data () {
-      return {
-        visible: false,
-        dataForm: {
-          id: 0,
-          assigneeId: '',
-          assigneeName: '',
-          phone: '',
-          priority: '',
-          status: 0,
-          wareId: '',
-          amount: '',
-          createTime: '',
-          updateTime: ''
-        },
-        dataRule: {
-          assigneeId: [
-            { required: true, message: '采购人id不能为空', trigger: 'blur' }
-          ],
-          assigneeName: [
+import warePurchase from "@/api/ware/warePurchase";
+
+export default {
+  data() {
+    return {
+      visible: false,
+      dataForm: {
+        id: 0,
+        assigneeId: '',
+        assigneeName: '',
+        phone: '',
+        priority: '',
+        status: 0,
+        wareId: '',
+        amount: '',
+        createTime: '',
+        updateTime: ''
+      },
+      dataRule: {
+        assigneeId: [
+          {required: true, message: '采购人id不能为空', trigger: 'blur'}
+        ],
+        assigneeName: [
             { required: true, message: '采购人名不能为空', trigger: 'blur' }
           ],
           phone: [
@@ -67,63 +69,30 @@
       init (id) {
         this.dataForm.id = id || 0
         this.visible = true
-        this.$nextTick(() => {
+        this.$nextTick(async () => {
           this.$refs['dataForm'].resetFields()
           if (this.dataForm.id) {
-            this.$http({
-              url: this.$http.adornUrl(`/ware/purchase/info/${this.dataForm.id}`),
-              method: 'get',
-              params: this.$http.adornParams()
-            }).then(({data}) => {
-              if (data && data.code === 0) {
-                this.dataForm.assigneeId = data.purchase.assigneeId
-                this.dataForm.assigneeName = data.purchase.assigneeName
-                this.dataForm.phone = data.purchase.phone
-                this.dataForm.priority = data.purchase.priority
-                this.dataForm.status = data.purchase.status
-                this.dataForm.wareId = data.purchase.wareId
-                this.dataForm.amount = data.purchase.amount
-                this.dataForm.createTime = data.purchase.createTime
-                this.dataForm.updateTime = data.purchase.updateTime
-              }
-            })
+            let {data} = await warePurchase.getById(this.dataForm.id)
+            if (data && data.code === 200) {
+              this.dataForm = data.data.purchase
+            }
           }
         })
       },
       // 表单提交
       dataFormSubmit () {
-        this.$refs['dataForm'].validate((valid) => {
+        this.$refs['dataForm'].validate(async (valid) => {
           if (valid) {
-            this.$http({
-              url: this.$http.adornUrl(`/ware/purchase/${!this.dataForm.id ? 'save' : 'update'}`),
-              method: 'post',
-              data: this.$http.adornData({
-                'id': this.dataForm.id || undefined,
-                'assigneeId': this.dataForm.assigneeId,
-                'assigneeName': this.dataForm.assigneeName,
-                'phone': this.dataForm.phone,
-                'priority': this.dataForm.priority,
-                'status': this.dataForm.status,
-                'wareId': this.dataForm.wareId,
-                'amount': this.dataForm.amount,
-                'createTime': this.dataForm.createTime,
-                'updateTime': this.dataForm.updateTime
-              })
-            }).then(({data}) => {
-              if (data && data.code === 0) {
-                this.$message({
-                  message: '操作成功',
-                  type: 'success',
-                  duration: 1500,
-                  onClose: () => {
-                    this.visible = false
-                    this.$emit('refreshDataList')
-                  }
-                })
-              } else {
-                this.$message.error(data.msg)
-              }
-            })
+            this.dataForm.id = this.dataForm.id || undefined
+            this.dataForm.updateTime = undefined
+            let {data} = !this.dataForm.id ? await warePurchase.save(this.dataForm) : await warePurchase.update(this.dataForm)
+            if (data && data.code === 200) {
+              this.$message.success("操作成功")
+              this.visible = false
+              this.$emit('refreshDataList')
+            } else {
+              this.$message.error(data.data.msg)
+            }
           }
         })
       }
