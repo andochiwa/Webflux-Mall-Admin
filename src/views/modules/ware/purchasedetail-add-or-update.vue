@@ -41,6 +41,8 @@
 </template>
 
 <script>
+import wareInfo from "@/api/ware/wareInfo";
+import warePurchaseDetail from "@/api/ware/warePurchaseDetail";
 export default {
   data() {
     return {
@@ -70,76 +72,44 @@ export default {
     this.getWares();
   },
   methods: {
-    getWares() {
-      this.$http({
-        url: this.$http.adornUrl("/ware/wareinfo/list"),
-        method: "get",
-        params: this.$http.adornParams({
-          page: 1,
-          limit: 500
-        })
-      }).then(({ data }) => {
-        this.wareList = data.page.list;
-      });
+    async getWares() {
+      let {data} = await wareInfo.getWarePagination(1, 500);
+      this.wareList = data.data.list
     },
     init(id) {
       this.dataForm.id = id || 0;
       this.visible = true;
-      this.$nextTick(() => {
+      this.$nextTick(async () => {
         this.$refs["dataForm"].resetFields();
         if (this.dataForm.id) {
-          this.$http({
-            url: this.$http.adornUrl(
-              `/ware/purchasedetail/info/${this.dataForm.id}`
-            ),
-            method: "get",
-            params: this.$http.adornParams()
-          }).then(({ data }) => {
-            if (data && data.code === 0) {
-              this.dataForm.purchaseId = data.purchaseDetail.purchaseId;
-              this.dataForm.skuId = data.purchaseDetail.skuId;
-              this.dataForm.skuNum = data.purchaseDetail.skuNum;
-              this.dataForm.skuPrice = data.purchaseDetail.skuPrice;
-              this.dataForm.wareId = data.purchaseDetail.wareId;
-              this.dataForm.status = data.purchaseDetail.status;
-            }
-          });
+          let {data} = await warePurchaseDetail.getById(this.dataForm.id);
+          if (data && data.code === 200) {
+            this.dataForm = data.data.purchaseDetail
+          }
         }
       });
     },
     // 表单提交
     dataFormSubmit() {
-      this.$refs["dataForm"].validate(valid => {
+      this.$refs["dataForm"].validate(async valid => {
         if (valid) {
-          this.$http({
-            url: this.$http.adornUrl(
-              `/ware/purchasedetail/${!this.dataForm.id ? "save" : "update"}`
-            ),
-            method: "post",
-            data: this.$http.adornData({
-              id: this.dataForm.id || undefined,
-              purchaseId: this.dataForm.purchaseId,
-              skuId: this.dataForm.skuId,
-              skuNum: this.dataForm.skuNum,
-              skuPrice: this.dataForm.skuPrice,
-              wareId: this.dataForm.wareId,
-              status: this.dataForm.status
-            })
-          }).then(({ data }) => {
-            if (data && data.code === 0) {
-              this.$message({
-                message: "操作成功",
-                type: "success",
-                duration: 1500,
-                onClose: () => {
-                  this.visible = false;
-                  this.$emit("refreshDataList");
-                }
-              });
-            } else {
-              this.$message.error(data.msg);
-            }
-          });
+          let dataForm = {
+            id: this.dataForm.id || undefined,
+            purchaseId: this.dataForm.purchaseId,
+            skuId: this.dataForm.skuId,
+            skuNum: this.dataForm.skuNum,
+            skuPrice: this.dataForm.skuPrice,
+            wareId: this.dataForm.wareId,
+            status: this.dataForm.status
+          }
+          const {data} = !dataForm.id ? await warePurchaseDetail.save(dataForm) : await warePurchaseDetail.update(dataForm)
+          if (data && data.code === 200) {
+            this.$message.success("操作成功")
+            this.visible = false;
+            this.$emit("refreshDataList");
+          } else {
+            this.$message.error(data.data.msg)
+          }
         }
       });
     }
