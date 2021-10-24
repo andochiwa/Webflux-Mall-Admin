@@ -37,6 +37,9 @@
 </template>
 
 <script>
+import wareInfo from "@/api/ware/wareInfo";
+import wareSku from "@/api/ware/wareSku";
+
 export default {
   data() {
     return {
@@ -66,72 +69,47 @@ export default {
     this.getWares();
   },
   methods: {
-    getWares() {
-      this.$http({
-        url: this.$http.adornUrl("/ware/wareinfo/list"),
-        method: "get",
-        params: this.$http.adornParams({
-          page: 1,
-          limit: 500
-        })
-      }).then(({ data }) => {
-        this.wareList = data.page.list;
-      });
+    async getWares() {
+      const {data} = await wareInfo.getWarePagination(1, 500)
+      this.wareList = data.data.list
     },
     init(id) {
       this.dataForm.id = id || 0;
       this.visible = true;
-      this.$nextTick(() => {
+      this.$nextTick(async () => {
         this.$refs["dataForm"].resetFields();
         if (this.dataForm.id) {
-          this.$http({
-            url: this.$http.adornUrl(`/ware/waresku/info/${this.dataForm.id}`),
-            method: "get",
-            params: this.$http.adornParams()
-          }).then(({ data }) => {
-            if (data && data.code === 0) {
-              this.dataForm.skuId = data.wareSku.skuId;
-              this.dataForm.wareId = data.wareSku.wareId;
-              this.dataForm.stock = data.wareSku.stock;
-              this.dataForm.skuName = data.wareSku.skuName;
-              this.dataForm.stockLocked = data.wareSku.stockLocked;
-            }
-          });
+          const {data} = await wareSku.getById(this.dataForm.id)
+          if (data && data.code === 200) {
+            this.dataForm.skuId = data.data.wareSku.skuId;
+            this.dataForm.wareId = data.data.wareSku.wareId;
+            this.dataForm.stock = data.data.wareSku.stock;
+            this.dataForm.skuName = data.data.wareSku.skuName;
+            this.dataForm.stockLocked = data.data.wareSku.stockLocked;
+          }
         }
       });
     },
     // 表单提交
     dataFormSubmit() {
-      this.$refs["dataForm"].validate(valid => {
+      this.$refs["dataForm"].validate(async valid => {
         if (valid) {
-          this.$http({
-            url: this.$http.adornUrl(
-              `/ware/waresku/${!this.dataForm.id ? "save" : "update"}`
-            ),
-            method: "post",
-            data: this.$http.adornData({
-              id: this.dataForm.id || undefined,
-              skuId: this.dataForm.skuId,
-              wareId: this.dataForm.wareId,
-              stock: this.dataForm.stock,
-              skuName: this.dataForm.skuName,
-              stockLocked: this.dataForm.stockLocked
-            })
-          }).then(({ data }) => {
-            if (data && data.code === 0) {
-              this.$message({
-                message: "操作成功",
-                type: "success",
-                duration: 1500,
-                onClose: () => {
-                  this.visible = false;
-                  this.$emit("refreshDataList");
-                }
-              });
-            } else {
-              this.$message.error(data.msg);
-            }
-          });
+          let dataForm = {
+            id: this.dataForm.id || undefined,
+            skuId: this.dataForm.skuId,
+            wareId: this.dataForm.wareId,
+            stock: this.dataForm.stock,
+            skuName: this.dataForm.skuName,
+            stockLocked: this.dataForm.stockLocked
+          }
+          const {data} = !dataForm.id ? await wareSku.save(dataForm) : await wareSku.update(dataForm)
+          if (data && data.code === 200) {
+            this.$message.success("操作成功")
+            this.visible = false;
+            this.$emit("refreshDataList");
+          } else {
+            this.$message.error(data.data.msg);
+          }
         }
       });
     }

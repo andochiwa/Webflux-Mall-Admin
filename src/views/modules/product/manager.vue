@@ -45,7 +45,7 @@
         </template>
       </el-table-column>
       <el-table-column type="selection" header-align="center" align="center" width="50"></el-table-column>
-      <el-table-column prop="skuId" header-align="center" align="center" label="skuId"></el-table-column>
+      <el-table-column prop="id" header-align="center" align="center" label="skuId"></el-table-column>
       <el-table-column prop="skuName" header-align="center" align="center" label="名称"></el-table-column>
       <el-table-column prop="skuDefaultImg" header-align="center" align="center" label="默认图片">
         <template slot-scope="scope">
@@ -56,8 +56,8 @@
       <el-table-column prop="saleCount" header-align="center" align="center" label="销量"></el-table-column>
       <el-table-column fixed="right" header-align="center" align="center" width="150" label="操作">
         <template slot-scope="scope">
-          <el-button type="text" size="small" @click="previewHandle(scope.row.skuId)">预览</el-button>
-          <el-button type="text" size="small" @click="commentHandle(scope.row.skuId)">评论</el-button>
+          <el-button type="text" size="small" @click="previewHandle(scope.row.id)">预览</el-button>
+          <el-button type="text" size="small" @click="commentHandle(scope.row.id)">评论</el-button>
           <el-dropdown
             @command="handleCommand(scope.row,$event)"
             size="small"
@@ -135,7 +135,7 @@ export default {
     handleCommand(row, command) {
       console.log("~~~~~", row, command);
       if ("stockSettings" === command) {
-        this.$router.push({path: "/ware-sku", query: {skuId: row.skuId}});
+        this.$router.push({path: "/ware-sku", query: {skuId: row.id}});
       }
     },
     searchSkuInfo() {

@@ -57,6 +57,9 @@
 
 <script>
 import AddOrUpdate from "./waresku-add-or-update";
+import wareSku from "@/api/ware/wareSku";
+import wareInfo from "@/api/ware/wareInfo";
+
 export default {
   data() {
     return {
@@ -86,40 +89,22 @@ export default {
     this.getDataList();
   },
   methods: {
-    getWares() {
-      this.$http({
-        url: this.$http.adornUrl("/ware/wareinfo/list"),
-        method: "get",
-        params: this.$http.adornParams({
-          page: 1,
-          limit: 500
-        })
-      }).then(({ data }) => {
-        this.wareList = data.page.list;
-      });
+    async getWares() {
+      const {data} = await wareInfo.getWarePagination(1, 500)
+      this.wareList = data.data.list
     },
     // 获取数据列表
-    getDataList() {
+    async getDataList() {
       this.dataListLoading = true;
-      this.$http({
-        url: this.$http.adornUrl("/ware/waresku/list"),
-        method: "get",
-        params: this.$http.adornParams({
-          page: this.pageIndex,
-          limit: this.pageSize,
-          skuId: this.dataForm.skuId,
-          wareId: this.dataForm.wareId
-        })
-      }).then(({ data }) => {
-        if (data && data.code === 0) {
-          this.dataList = data.page.list;
-          this.totalPage = data.page.totalCount;
-        } else {
-          this.dataList = [];
-          this.totalPage = 0;
-        }
-        this.dataListLoading = false;
-      });
+      const {data} = await wareSku.getPagination(this.pageIndex, this.pageSize, this.dataForm.skuId, this.dataForm.wareId)
+      if (data && data.code === 200) {
+        this.dataList = data.data.list;
+        this.totalPage = data.data.totalCount;
+      } else {
+        this.dataList = [];
+        this.totalPage = 0;
+      }
+      this.dataListLoading = false;
     },
     // 每页数
     sizeChangeHandle(val) {
@@ -144,13 +129,11 @@ export default {
       });
     },
     // 删除
-    deleteHandle(id) {
-      var ids = id
-        ? [id]
-        : this.dataListSelections.map(item => {
-            return item.id;
-          });
-      this.$confirm(
+    async deleteHandle(id) {
+      var ids = id ? [id] : this.dataListSelections.map(item => {
+        return item.id
+      });
+      const confirm = await this.$confirm(
         `确定对[id=${ids.join(",")}]进行[${id ? "删除" : "批量删除"}]操作?`,
         "提示",
         {
@@ -158,26 +141,17 @@ export default {
           cancelButtonText: "取消",
           type: "warning"
         }
-      ).then(() => {
-        this.$http({
-          url: this.$http.adornUrl("/ware/waresku/delete"),
-          method: "post",
-          data: this.$http.adornData(ids, false)
-        }).then(({ data }) => {
-          if (data && data.code === 0) {
-            this.$message({
-              message: "操作成功",
-              type: "success",
-              duration: 1500,
-              onClose: () => {
-                this.getDataList();
-              }
-            });
-          } else {
-            this.$message.error(data.msg);
-          }
-        });
-      });
+      ).catch(() => {})
+      if (!confirm) {
+        return
+      }
+      const {data} = await wareSku.delete(ids)
+      if (data && data.code === 200) {
+        this.$message.success("操作成功");
+        await this.getDataList();
+      } else {
+        this.$message.error(data.data.msg);
+      }
     }
   }
 };
