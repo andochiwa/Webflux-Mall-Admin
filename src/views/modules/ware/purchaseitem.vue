@@ -84,7 +84,7 @@
           :label="item.id"
           :value="item.id"
         >
-          <span style="float: left">{{ item.id }}</span>
+          <span style="float: left">{{ item.id }}: </span>
           <span
             style="float: right; color: #8492a6; font-size: 13px"
           >{{ item.assigneeName }}：{{item.phone}}</span>
@@ -101,6 +101,7 @@
 <script>
 import AddOrUpdate from "./purchasedetail-add-or-update";
 import wareInfo from "@/api/ware/wareInfo";
+import warePurchase from "@/api/ware/warePurchase";
 import warePurchaseDetail from "@/api/ware/warePurchaseDetail";
 
 export default {
@@ -131,52 +132,41 @@ export default {
     this.getWares();
   },
   methods: {
-    mergeItem() {
+    async mergeItem() {
       let items = this.dataListSelections.map(item => {
         return item.id;
       });
       if (!this.purchaseId) {
-        this.$confirm(
-          "没有选择任何【采购单】，将自动创建新单进行合并。确认吗？",
-          "提示",
-          {
+        let confirm = await this.$confirm("没有选择任何【采购单】，将自动创建新单进行合并。确认吗？", "提示", {
             confirmButtonText: "确定",
             cancelButtonText: "取消",
             type: "warning"
           }
-        )
-          .then(() => {
-            this.$http({
-              url: this.$http.adornUrl("/ware/purchase/merge"),
-              method: "post",
-              data: this.$http.adornData({ items: items }, false)
-            }).then(({ data }) => {
-              this.getDataList();
-            });
-          })
-          .catch(() => {});
+        ).catch()
+        if (!confirm) {
+          return
+        }
+        let {data} = await warePurchase.mergePurchaseDetail({items: items});
+        if (data && data.code === 200) {
+          this.$message.success("操作成功")
+          await this.getDataList()
+        } else {
+          this.$message.error(data.data.msg)
+        }
       } else {
-        this.$http({
-          url: this.$http.adornUrl("/ware/purchase/merge"),
-          method: "post",
-          data: this.$http.adornData(
-            { purchaseId: this.purchaseId, items: items },
-            false
-          )
-        }).then(({ data }) => {
-          this.getDataList();
-        });
+        let {data} = await warePurchase.mergePurchaseDetail({purchaseId: this.purchaseId, items: items});
+        if (data && data.code === 200) {
+          this.$message.success("操作成功")
+          this.mergedialogVisible = false;
+          await this.getDataList()
+        } else {
+          this.$message.error(data.data.msg)
+        }
       }
-      this.mergedialogVisible = false;
     },
-    getUnreceivedPurchase() {
-      this.$http({
-        url: this.$http.adornUrl("/ware/purchase/unreceive/list"),
-        method: "get",
-        params: this.$http.adornParams({})
-      }).then(({ data }) => {
-        this.purchasetableData = data.page.list;
-      });
+    async getUnreceivedPurchase() {
+      let {data} = await warePurchase.getUnreceivedPurchase();
+      this.purchasetableData = data.data.list
     },
     handleBatchCommand(cmd) {
       if (cmd === "delete") {

@@ -134,40 +134,31 @@ export default {
       this.currentRow = row;
       this.caigoudialogVisible = true;
     },
-    assignUser() {
+    async assignUser() {
       let user = {};
-      this.userList.forEach(item => {
+      for (const item of this.userList) {
         if (item.userId === this.userId) {
           user = item;
+          break
         }
-      });
+      }
+      let dataForm = {
+        id: this.currentRow.id || undefined,
+        assigneeId: user.userId,
+        assigneeName: user.username,
+        phone: user.mobile,
+        status: 1,
+        createTime: this.currentRow.createTime
+      }
       this.caigoudialogVisible = false;
-      this.$http({
-        url: this.$http.adornUrl(
-          `/ware/purchase/update`
-        ),
-        method: "post",
-        data: this.$http.adornData({
-          id: this.currentRow.id || undefined,
-          assigneeId: user.userId,
-          assigneeName: user.username,
-          phone: user.mobile,
-          status: 1
-        })
-      }).then(({ data }) => {
-        if (data && data.code === 0) {
-          this.$message({
-            message: "操作成功",
-            type: "success",
-            duration: 1500
-          });
-
-          this.userId = "";
-          this.getDataList();
-        } else {
-          this.$message.error(data.msg);
-        }
-      });
+      let {data} = await warePurchase.update(dataForm)
+      if (data && data.code === 200) {
+        this.$message.success("操作成功")
+        this.userId = "";
+        await this.getDataList();
+      } else {
+        this.$message.error(data.data.msg);
+      }
     },
     getUserList() {
       this.$http({

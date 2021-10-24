@@ -34,5 +34,18 @@ export default {
       method: `delete`,
       data: ids
     })
+  },
+  getUnreceivedPurchase() {
+    return httpRequest({
+      url: `ware/purchase/unreceived`,
+      method: `get`
+    })
+  },
+  mergePurchaseDetail(data) {
+    return httpRequest({
+      url: `ware/purchase/merge`,
+      method: `post`,
+      data
+    })
   }
 }
