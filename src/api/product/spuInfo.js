@@ -14,5 +14,11 @@ export default {
       method: `get`,
       params: {page, limit, key, catelogId, brandId, status, order, sortField }
     })
+  },
+  putOnSale(id) {
+    return httpRequest({
+      url: `product/spuinfo/${id}/put-on`,
+      method: `put`
+    })
   }
 }

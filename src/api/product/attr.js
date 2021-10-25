@@ -42,4 +42,17 @@ export default {
       data: {attrId, attrGroupId}
     })
   },
+  getBaseAttrValueBySpuId(spuId) {
+    return httpRequest({
+      url: `product/attr/base/spu/${spuId}`,
+      method: `get`
+    })
+  },
+  updateAttrValue(spuId, data) {
+    return httpRequest({
+      url: `product/attr/update/${spuId}`,
+      method: `put`,
+      data
+    })
+  }
 }

@@ -13,7 +13,7 @@
               <el-form ref="form" :model="dataResp">
                 <el-form-item
                   :label="attr.attrName"
-                  v-for="(attr,aidx) in group.attrs"
+                  v-for="(attr,aidx) in group.attrList"
                   :key="attr.attrId"
                 >
                   <el-input
@@ -22,8 +22,8 @@
                     v-show="false"
                   ></el-input>
                   <el-select
-                    v-model="dataResp.baseAttrs[gidx][aidx].attrValues"
-                    :multiple="attr.valueType == 1"
+                    v-model="dataResp.baseAttrs[gidx][aidx].attrValue"
+                    multiple
                     filterable
                     allow-create
                     default-first-option
@@ -55,13 +55,16 @@
 </template>
 
 <script>
+import attr from "@/api/product/attr";
+import attrgroup from "@/api/product/attrgroup";
+
 export default {
   components: {},
   props: {},
   data() {
     return {
       spuId: "",
-      catalogId: "",
+      catelogId: "",
       dataResp: {
         //后台返回的所有数据
         attrGroups: [],
@@ -72,75 +75,54 @@ export default {
   },
   computed: {},
   methods: {
-    clearData(){
+    clearData() {
       this.dataResp.attrGroups = [];
       this.dataResp.baseAttrs = [];
       this.spuAttrsMap = {};
     },
-    getSpuBaseAttrs() {
-      this.$http({
-        url: this.$http.adornUrl(`/product/attr/base/listforspu/${this.spuId}`),
-        method: "get"
-      }).then(({ data }) => {
-        data.data.forEach(item => {
-          this.spuAttrsMap["" + item.attrId] = item;
-        });
-        console.log("~~~~", this.spuAttrsMap);
-      });
+    async getSpuBaseAttrs() {
+      let {data} = await attr.getBaseAttrValueBySpuId(this.spuId)
+      data.data.list.forEach(item => {
+        this.spuAttrsMap[item.attrId] = item
+      })
     },
     getQueryParams() {
       this.spuId = this.$route.query.spuId;
-      this.catalogId = this.$route.query.catalogId;
-      console.log("----", this.spuId, this.catalogId);
+      this.catelogId = this.$route.query.catelogId;
     },
-    showBaseAttrs() {
+    async showBaseAttrs() {
       let _this = this;
-      this.$http({
-        url: this.$http.adornUrl(
-          `/product/attrgroup/${this.catalogId}/withattr`
-        ),
-        method: "get",
-        params: this.$http.adornParams({})
-      }).then(({ data }) => {
-        //先对表单的baseAttrs进行初始化
-        data.data.forEach(item => {
-          let attrArray = [];
-          item.attrs.forEach(attr => {
-            let v = "";
-            if (_this.spuAttrsMap["" + attr.attrId]) {
-              v = _this.spuAttrsMap["" + attr.attrId].attrValue.split(";");
-              if (v.length == 1) {
-                v = v[0] + "";
-              }
-            }
-            attrArray.push({
-              attrId: attr.attrId,
-              attrName: attr.attrName,
-              attrValues: v,
-              showDesc: _this.spuAttrsMap["" + attr.attrId]
-                ? _this.spuAttrsMap["" + attr.attrId].quickShow
-                : attr.showDesc
-            });
+      let {data} = await attrgroup.getAttrGroupWithAttrsByCatelogId(this.catelogId)
+      data.data.list.forEach(item => {
+        let attrArray = [];
+        item.attrList.forEach(attr => {
+          let v = "";
+          if (_this.spuAttrsMap[attr.id]) {
+            v = _this.spuAttrsMap[attr.id].attrValue.split(";");
+          }
+          attrArray.push({
+            attrId: attr.id,
+            attrName: attr.attrName,
+            attrValue: v,
+            showDesc: _this.spuAttrsMap[attr.id]
+              ? _this.spuAttrsMap[attr.id].quickShow
+              : attr.showDesc
           });
-          this.dataResp.baseAttrs.push(attrArray);
         });
-        this.dataResp.attrGroups = data.data;
+        this.dataResp.baseAttrs.push(attrArray);
       });
+      this.dataResp.attrGroups = data.data.list;
     },
-    submitSpuAttrs() {
-      console.log("·····", this.dataResp.baseAttrs);
-      //spu_id  attr_id  attr_name             attr_value             attr_sort  quick_show
+    async submitSpuAttrs() {
       let submitData = [];
       this.dataResp.baseAttrs.forEach(item => {
         item.forEach(attr => {
           let val = "";
-          if (attr.attrValues instanceof Array) {
-            val = attr.attrValues.join(";");
-          } else {
-            val = attr.attrValues;
+          if (attr.attrValue instanceof Array) {
+            val = attr.attrValue.join(";");
           }
 
-          if (val != "") {
+          if (val !== "") {
             submitData.push({
               attrId: attr.attrId,
               attrName: attr.attrName,
@@ -151,41 +133,30 @@ export default {
         });
       });
 
-      this.$confirm("修改商品规格信息, 是否继续?", "提示", {
+      let confirm = await this.$confirm("修改商品规格信息, 是否继续?", "提示", {
         confirmButtonText: "确定",
         cancelButtonText: "取消",
         type: "warning"
-      })
-        .then(() => {
-          this.$http({
-            url: this.$http.adornUrl(`/product/attr/update/${this.spuId}`),
-            method: "post",
-            data: this.$http.adornData(submitData, false)
-          }).then(({ data }) => {
-            this.$message({
-              type: "success",
-              message: "属性修改成功!"
-            });
-          });
-        })
-        .catch((e) => {
-          this.$message({
-            type: "info",
-            message: "已取消修改"+e
-          });
-        });
+      }).catch()
+      if (!confirm) {
+        return
+      }
+      let {data} = await attr.updateAttrValue(this.spuId, submitData)
+      if (data && data.code === 200) {
+        this.$message.success("修改成功")
+      } else {
+        this.$message.error(data.data.msg)
+      }
     }
   },
   created() {},
   activated() {
     this.clearData();
     this.getQueryParams();
-    if (this.spuId && this.catalogId) {
+    if (this.spuId && this.catelogId) {
       this.showBaseAttrs();
       this.getSpuBaseAttrs();
     }
   }
 };
 </script>
-<style scoped>
-</style>

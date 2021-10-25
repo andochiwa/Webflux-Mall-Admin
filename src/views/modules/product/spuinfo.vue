@@ -76,24 +76,22 @@ export default {
     this.getDataList();
   },
   methods: {
-    productUp(id) {
-      this.$http({
-        url: this.$http.adornUrl("/product/spuinfo/" + id + "/up"),
-        method: "post"
-      }).then(({ data }) => {
-        if (data && data.code === 0) {
-          this.$message({
-            message: "操作成功",
-            type: "success",
-            duration: 1500,
-            onClose: () => {
-              this.getDataList();
-            }
-          });
-        } else {
-          this.$message.error(data.msg);
-        }
-      });
+    async productUp(id) {
+      let confirm = await this.$confirm(`确定要上架[${id}]吗？`, "提示", {
+        type: "info",
+        confirmButtonText: "确定",
+        cancelButtonText: "取消",
+      }).catch()
+      if (!confirm) {
+        return
+      }
+      let {data} = await spuInfo.putOnSale(id)
+      if (data && data.code === 200) {
+        this.$message.success("操作成功")
+        await this.getDataList();
+      } else {
+        this.$message.error(data.data.msg)
+      }
     },
     attrUpdateShow(row) {
       console.log(row);
