@@ -147,6 +147,7 @@ export default {
         assigneeId: user.userId,
         assigneeName: user.username,
         phone: user.mobile,
+        priority: this.currentRow.priority,
         status: 1,
         createTime: this.currentRow.createTime
       }
