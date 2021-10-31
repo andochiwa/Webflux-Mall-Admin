@@ -64,17 +64,19 @@
 </template>
 
 <script>
-  export default {
-    data () {
-      return {
-        visible: false,
-        dataForm: {
-          id: 0,
-          levelId: '',
-          username: '',
-          password: '',
-          nickname: '',
-          mobile: '',
+import member from "@/api/member/member";
+
+export default {
+  data() {
+    return {
+      visible: false,
+      dataForm: {
+        id: 0,
+        levelId: '',
+        username: '',
+        password: '',
+        nickname: '',
+        mobile: '',
           email: '',
           header: '',
           gender: '',
@@ -101,38 +103,14 @@
           nickname: [
             { required: true, message: '昵称不能为空', trigger: 'blur' }
           ],
-          mobile: [
-            { required: true, message: '手机号码不能为空', trigger: 'blur' }
-          ],
           email: [
             { required: true, message: '邮箱不能为空', trigger: 'blur' }
-          ],
-          header: [
-            { required: true, message: '头像不能为空', trigger: 'blur' }
           ],
           gender: [
             { required: true, message: '性别不能为空', trigger: 'blur' }
           ],
-          birth: [
-            { required: true, message: '生日不能为空', trigger: 'blur' }
-          ],
-          city: [
-            { required: true, message: '所在城市不能为空', trigger: 'blur' }
-          ],
-          job: [
-            { required: true, message: '职业不能为空', trigger: 'blur' }
-          ],
-          sign: [
-            { required: true, message: '个性签名不能为空', trigger: 'blur' }
-          ],
-          sourceType: [
-            { required: true, message: '用户来源不能为空', trigger: 'blur' }
-          ],
           integration: [
             { required: true, message: '积分不能为空', trigger: 'blur' }
-          ],
-          growth: [
-            { required: true, message: '成长值不能为空', trigger: 'blur' }
           ],
           status: [
             { required: true, message: '启用状态不能为空', trigger: 'blur' }
@@ -147,79 +125,29 @@
       init (id) {
         this.dataForm.id = id || 0
         this.visible = true
-        this.$nextTick(() => {
+        this.$nextTick(async () => {
           this.$refs['dataForm'].resetFields()
           if (this.dataForm.id) {
-            this.$http({
-              url: this.$http.adornUrl(`/member/member/info/${this.dataForm.id}`),
-              method: 'get',
-              params: this.$http.adornParams()
-            }).then(({data}) => {
-              if (data && data.code === 0) {
-                this.dataForm.levelId = data.member.levelId
-                this.dataForm.username = data.member.username
-                this.dataForm.password = data.member.password
-                this.dataForm.nickname = data.member.nickname
-                this.dataForm.mobile = data.member.mobile
-                this.dataForm.email = data.member.email
-                this.dataForm.header = data.member.header
-                this.dataForm.gender = data.member.gender
-                this.dataForm.birth = data.member.birth
-                this.dataForm.city = data.member.city
-                this.dataForm.job = data.member.job
-                this.dataForm.sign = data.member.sign
-                this.dataForm.sourceType = data.member.sourceType
-                this.dataForm.integration = data.member.integration
-                this.dataForm.growth = data.member.growth
-                this.dataForm.status = data.member.status
-                this.dataForm.createTime = data.member.createTime
-              }
-            })
+            let {data} = await member.getById(this.dataForm.id)
+            if (data && data.code === 200) {
+              this.dataForm = data.data.member
+            }
           }
         })
       },
       // 表单提交
       dataFormSubmit () {
-        this.$refs['dataForm'].validate((valid) => {
+        this.$refs['dataForm'].validate(async (valid) => {
           if (valid) {
-            this.$http({
-              url: this.$http.adornUrl(`/member/member/${!this.dataForm.id ? 'save' : 'update'}`),
-              method: 'post',
-              data: this.$http.adornData({
-                'id': this.dataForm.id || undefined,
-                'levelId': this.dataForm.levelId,
-                'username': this.dataForm.username,
-                'password': this.dataForm.password,
-                'nickname': this.dataForm.nickname,
-                'mobile': this.dataForm.mobile,
-                'email': this.dataForm.email,
-                'header': this.dataForm.header,
-                'gender': this.dataForm.gender,
-                'birth': this.dataForm.birth,
-                'city': this.dataForm.city,
-                'job': this.dataForm.job,
-                'sign': this.dataForm.sign,
-                'sourceType': this.dataForm.sourceType,
-                'integration': this.dataForm.integration,
-                'growth': this.dataForm.growth,
-                'status': this.dataForm.status,
-                'createTime': this.dataForm.createTime
-              })
-            }).then(({data}) => {
-              if (data && data.code === 0) {
-                this.$message({
-                  message: '操作成功',
-                  type: 'success',
-                  duration: 1500,
-                  onClose: () => {
-                    this.visible = false
-                    this.$emit('refreshDataList')
-                  }
-                })
-              } else {
-                this.$message.error(data.msg)
-              }
-            })
+            this.dataForm.id = this.dataForm.id || undefined
+            let {data} = !this.dataForm.id ? await member.save(this.dataForm) : await member.update(this.dataForm)
+            if (data && data.code === 200) {
+              $this.$message.success("操作成功")
+              this.visible = false
+              this.$emit('refreshDataList')
+            } else {
+              this.$message.error(data.data.msg)
+            }
           }
         })
       }
