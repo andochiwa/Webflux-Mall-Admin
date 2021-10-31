@@ -70,8 +70,8 @@
         align="center"
         label="付款方式">
         <template slot-scope="scope">
-          <el-tag v-if="scope.row.payment==1">在线付款</el-tag>
-          <el-tag v-if="scope.row.payment==2">货到付款</el-tag>
+          <el-tag v-if="scope.row.paymentWay === 1">在线付款</el-tag>
+          <el-tag v-if="scope.row.paymentWay === 2">货到付款</el-tag>
         </template>
       </el-table-column>
       <el-table-column
@@ -137,8 +137,10 @@
 </template>
 
 <script>
-  import AddOrUpdate from './wareordertask-add-or-update'
-  export default {
+import AddOrUpdate from './wareordertask-add-or-update'
+import wareOrderTask from "@/api/ware/wareOrderTask";
+
+export default {
     data () {
       return {
         dataForm: {
@@ -161,26 +163,18 @@
     },
     methods: {
       // 获取数据列表
-      getDataList () {
+      async getDataList () {
         this.dataListLoading = true
-        this.$http({
-          url: this.$http.adornUrl('/ware/wareordertask/list'),
-          method: 'get',
-          params: this.$http.adornParams({
-            'page': this.pageIndex,
-            'limit': this.pageSize,
-            'key': this.dataForm.key
-          })
-        }).then(({data}) => {
-          if (data && data.code === 0) {
-            this.dataList = data.page.list
-            this.totalPage = data.page.totalCount
-          } else {
-            this.dataList = []
-            this.totalPage = 0
-          }
-          this.dataListLoading = false
-        })
+        let {data} = await wareOrderTask.getPagination(this.pageIndex, this.pageSize, this.dataForm.key)
+        if (data && data.code === 200) {
+          this.dataList = data.data.list
+          this.totalPage = data.data.totalCount
+        } else {
+          this.dataList = []
+          this.totalPage = 0
+        }
+        this.dataListLoading = false
+
       },
       // 每页数
       sizeChangeHandle (val) {
@@ -205,34 +199,25 @@
         })
       },
       // 删除
-      deleteHandle (id) {
+      async deleteHandle (id) {
         var ids = id ? [id] : this.dataListSelections.map(item => {
           return item.id
         })
-        this.$confirm(`确定对[id=${ids.join(',')}]进行[${id ? '删除' : '批量删除'}]操作?`, '提示', {
+        let confirm = await this.$confirm(`确定对[id=${ids.join(',')}]进行[${id ? '删除' : '批量删除'}]操作?`, '提示', {
           confirmButtonText: '确定',
           cancelButtonText: '取消',
           type: 'warning'
-        }).then(() => {
-          this.$http({
-            url: this.$http.adornUrl('/ware/wareordertask/delete'),
-            method: 'post',
-            data: this.$http.adornData(ids, false)
-          }).then(({data}) => {
-            if (data && data.code === 0) {
-              this.$message({
-                message: '操作成功',
-                type: 'success',
-                duration: 1500,
-                onClose: () => {
-                  this.getDataList()
-                }
-              })
-            } else {
-              this.$message.error(data.msg)
-            }
-          })
-        })
+        }).catch()
+        if (!confirm) {
+          return
+        }
+        let {data} = await wareOrderTask.delete(ids);
+        if (data && data.code === 200) {
+          this.$message.success("操作成功")
+          await this.getDataList()
+        } else {
+          this.$message.error(data.data.msg)
+        }
       }
     }
   }
